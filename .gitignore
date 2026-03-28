@@ -1,0 +1,65 @@
+# =========================
+# ENV FILES (CRITICAL)
+# =========================
+.env
+.env.local
+.env.*.local
+
+# Supabase secrets
+supabase/.env.local
+
+# Backend env
+backend/app/.env
+
+# =========================
+# NODE / FRONTEND
+# =========================
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# PYTHON / BACKEND
+# =========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual envs
+venv/
+.env/
+.venv/
+
+# =========================
+# DENO / SUPABASE
+# =========================
+.supabase/
+deno.lock
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# EDITOR FILES
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# TEST / CACHE
+# =========================
+.pytest_cache/
+coverage/
