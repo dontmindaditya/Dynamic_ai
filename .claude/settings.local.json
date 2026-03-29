@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"response_model\" /d/Dynamic_ai/backend/app/routers/*.py)",
+      "Bash(grep -n \"from.*@supabase\\\\|import.*@supabase\" /d/Dynamic_ai/supabase/functions/_shared/*.ts)",
+      "Bash(grep -n \"interface Agent\\\\|type Agent\" /d/Dynamic_ai/frontend/components/agents/*.tsx /d/Dynamic_ai/frontend/lib/*.ts)",
+      "Bash(pip install:*)",
+      "Bash(python -c \":*)"
+    ]
+  }
+}

@@ -1,213 +1,163 @@
+// ============================================================
+// supabase/functions/_shared/llm_client.ts
+// Single interface for all LLM calls — routes to OpenAI or
+// Anthropic based on config.provider. All callers (EF1-EF4)
+// use this. Never call the LLM APIs directly from edge functions.
+// ============================================================
+
+import type { AgentConfig, LLMProvider, LLMResponse, Message } from './types.ts'
+import type { ToolDefinition } from './tool_definitions.ts'
 import { LLMError } from './errors.ts'
-import type { CallLLMInput, LLMResponse, Message, TokenUsage, ToolCall } from './types.ts'
+import {
+  parseOpenAIResponse,
+  buildOpenAIMessages,
+} from './openai_adapter.ts'
+import {
+  parseAnthropicResponse,
+  buildAnthropicMessages,
+} from './anthropic_adapter.ts'
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
-const DEFAULT_OPENAI_MODEL = 'gpt-4o-mini'
-const DEFAULT_ANTHROPIC_MODEL = 'claude-3-5-haiku-latest'
+const OPENAI_API_URL    = 'https://api.openai.com/v1/chat/completions'
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
+const OPENAI_MODEL      = 'gpt-4o'
+const ANTHROPIC_MODEL   = 'claude-sonnet-4-20250514'
 
-function toOpenAIMessage(message: Message): Record<string, unknown> {
-  if (message.role === 'tool') {
-    return {
-      role: 'tool',
-      content: message.content,
-      tool_call_id: message.tool_call_id,
-    }
-  }
-
-  const payload: Record<string, unknown> = {
-    role: message.role,
-    content: message.content,
-  }
-
-  if (message.role === 'assistant' && message.tool_calls?.length) {
-    payload.tool_calls = message.tool_calls.map((toolCall) => ({
-      id: toolCall.id,
-      type: 'function',
-      function: {
-        name: toolCall.name,
-        arguments: JSON.stringify(toolCall.arguments ?? {}),
-      },
-    }))
-  }
-
-  return payload
+// Options for a single LLM call
+export interface LLMCallOptions {
+  provider:      LLMProvider
+  system_prompt: string
+  messages:      Message[]
+  tools?:        ToolDefinition[]   // pass undefined for non-tool calls (EF1, EF4)
+  max_tokens?:   number
+  temperature?:  number
+  // BYOK: if provided, use this key instead of env var
+  api_key_override?: string
 }
 
-function normalizeUsage(usage: Record<string, unknown> | undefined): TokenUsage | undefined {
-  if (!usage) return undefined
-
-  const input = typeof usage.prompt_tokens === 'number'
-    ? usage.prompt_tokens
-    : typeof usage.input_tokens === 'number'
-      ? usage.input_tokens
-      : 0
-
-  const output = typeof usage.completion_tokens === 'number'
-    ? usage.completion_tokens
-    : typeof usage.output_tokens === 'number'
-      ? usage.output_tokens
-      : 0
-
-  const total = typeof usage.total_tokens === 'number'
-    ? usage.total_tokens
-    : input + output
-
-  return {
-    input_tokens: input,
-    output_tokens: output,
-    total_tokens: total,
+// Main entry point — call once per loop iteration in EF3
+export async function callLLM(opts: LLMCallOptions): Promise<LLMResponse> {
+  if (opts.provider === 'openai') {
+    return callOpenAI(opts)
   }
+  return callAnthropic(opts)
 }
 
-function parseToolCalls(rawToolCalls: Array<Record<string, unknown>>): ToolCall[] {
-  return rawToolCalls.flatMap((toolCall) => {
-    const id = typeof toolCall.id === 'string' ? toolCall.id : crypto.randomUUID()
-    const fn = toolCall.function
+// ── OpenAI ───────────────────────────────────────────────────
 
-    if (!fn || typeof fn !== 'object') return []
+async function callOpenAI(opts: LLMCallOptions): Promise<LLMResponse> {
+  const apiKey = opts.api_key_override ?? Deno.env.get('OPENAI_API_KEY')
+  if (!apiKey) throw new LLMError('openai', 'OPENAI_API_KEY not set')
 
-    const functionCall = fn as { name?: unknown; arguments?: unknown }
-    const name = typeof functionCall.name === 'string' ? functionCall.name : undefined
-    const rawArgs = typeof functionCall.arguments === 'string' ? functionCall.arguments : '{}'
-
-    if (!name) return []
-
-    let parsedArgs: Record<string, unknown> = {}
-    try {
-      const maybeObject = JSON.parse(rawArgs)
-      if (maybeObject && typeof maybeObject === 'object' && !Array.isArray(maybeObject)) {
-        parsedArgs = maybeObject as Record<string, unknown>
-      }
-    } catch {
-      parsedArgs = {}
-    }
-
-    return [{
-      id,
-      name,
-      arguments: parsedArgs,
-    }]
-  })
-}
-
-async function callOpenAI(input: CallLLMInput): Promise<LLMResponse> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY')
-  if (!apiKey) {
-    throw new LLMError('OPENAI_API_KEY is not configured')
+  const body: Record<string, unknown> = {
+    model:       OPENAI_MODEL,
+    max_tokens:  opts.max_tokens  ?? 2000,
+    temperature: opts.temperature ?? 0.3,
+    messages: [
+      { role: 'system', content: opts.system_prompt },
+      ...buildOpenAIMessages(opts.messages),
+    ],
   }
 
-  const response = await fetch(OPENAI_API_URL, {
-    method: 'POST',
+  if (opts.tools?.length) {
+    body.tools       = opts.tools.map((t) => t.openai)
+    body.tool_choice = 'auto'
+  }
+
+  const res = await fetch(OPENAI_API_URL, {
+    method:  'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      'Content-Type':  'application/json',
     },
-    body: JSON.stringify({
-      model: input.model ?? DEFAULT_OPENAI_MODEL,
-      temperature: input.temperature ?? 0.3,
-      messages: [
-        { role: 'system', content: input.system_prompt },
-        ...input.messages.map(toOpenAIMessage),
-      ],
-      tools: input.tools,
-      tool_choice: input.tools?.length ? 'auto' : undefined,
-      response_format: { type: 'json_object' },
-    }),
+    body: JSON.stringify(body),
   })
 
-  const payload = await response.json()
-  if (!response.ok) {
-    const message = typeof payload?.error?.message === 'string'
-      ? payload.error.message
-      : `OpenAI request failed with status ${response.status}`
-    throw new LLMError(message, response.status)
+  if (!res.ok) {
+    const text = await res.text()
+    throw new LLMError('openai', text, res.status)
   }
 
-  const choice = payload?.choices?.[0]?.message
-  if (!choice) {
-    throw new LLMError('OpenAI response did not include a message')
-  }
-
-  const usage = normalizeUsage(payload.usage)
-  const toolCalls = Array.isArray(choice.tool_calls)
-    ? parseToolCalls(choice.tool_calls as Array<Record<string, unknown>>)
-    : []
-
-  if (toolCalls.length) {
-    return {
-      type: 'tool_calls',
-      content: '',
-      tool_calls: toolCalls,
-      usage,
-    }
-  }
-
-  return {
-    type: 'final_answer',
-    content: typeof choice.content === 'string' ? choice.content : JSON.stringify(choice.content ?? {}),
-    usage,
-  }
+  const raw = await res.json()
+  return parseOpenAIResponse(raw)
 }
 
-async function callAnthropic(input: CallLLMInput): Promise<LLMResponse> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
-  if (!apiKey) {
-    throw new LLMError('ANTHROPIC_API_KEY is not configured')
+// ── Anthropic ────────────────────────────────────────────────
+
+async function callAnthropic(opts: LLMCallOptions): Promise<LLMResponse> {
+  const apiKey = opts.api_key_override ?? Deno.env.get('ANTHROPIC_API_KEY')
+  if (!apiKey) throw new LLMError('anthropic', 'ANTHROPIC_API_KEY not set')
+
+  const body: Record<string, unknown> = {
+    model:       ANTHROPIC_MODEL,
+    max_tokens:  opts.max_tokens  ?? 2000,
+    temperature: opts.temperature ?? 0.3,
+    system:      opts.system_prompt,
+    messages:    buildAnthropicMessages(opts.messages),
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
+  if (opts.tools?.length) {
+    body.tools = opts.tools.map((t) => t.anthropic)
+  }
+
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method:  'POST',
     headers: {
-      'x-api-key': apiKey,
+      'x-api-key':         apiKey,
       'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
+      'Content-Type':      'application/json',
     },
-    body: JSON.stringify({
-      model: input.model ?? DEFAULT_ANTHROPIC_MODEL,
-      system: input.system_prompt,
-      max_tokens: 1024,
-      temperature: input.temperature ?? 0.3,
-      messages: input.messages
-        .filter((message) => message.role !== 'tool')
-        .map((message) => ({
-          role: message.role === 'assistant' ? 'assistant' : 'user',
-          content: message.content,
-        })),
-    }),
+    body: JSON.stringify(body),
   })
 
-  const payload = await response.json()
-  if (!response.ok) {
-    const message = typeof payload?.error?.message === 'string'
-      ? payload.error.message
-      : `Anthropic request failed with status ${response.status}`
-    throw new LLMError(message, response.status)
+  if (!res.ok) {
+    const text = await res.text()
+    throw new LLMError('anthropic', text, res.status)
   }
 
-  const text = Array.isArray(payload.content)
-    ? payload.content
-        .filter((item: Record<string, unknown>) => item.type === 'text')
-        .map((item: Record<string, unknown>) => String(item.text ?? ''))
-        .join('\n')
-    : ''
-
-  return {
-    type: 'final_answer',
-    content: text,
-    usage: normalizeUsage(payload.usage),
-  }
+  const raw = await res.json()
+  return parseAnthropicResponse(raw)
 }
 
-export async function callLLM(input: CallLLMInput): Promise<LLMResponse> {
-  const provider = input.provider.toLowerCase()
+// ── Simple text completion ────────────────────────────────────
+// Used by EF1 (prompt generator) and EF4 (reviewer) — no tools,
+// just a prompt → JSON string response
 
-  if (provider === 'openai') {
-    return callOpenAI(input)
+export async function callLLMForJSON(
+  provider: LLMProvider,
+  system_prompt: string,
+  user_prompt: string,
+  api_key_override?: string
+): Promise<string> {
+  const response = await callLLM({
+    provider,
+    system_prompt,
+    messages: [{ role: 'user', content: user_prompt }],
+    max_tokens:  2000,
+    temperature: 0.1,    // low temp for structured JSON output
+    api_key_override,
+  })
+
+  if (response.type !== 'final_answer' || !response.content) {
+    throw new LLMError(provider, 'Expected final_answer but got tool_calls in JSON call')
   }
 
-  if (provider === 'anthropic') {
-    return callAnthropic(input)
-  }
+  return response.content
+}
 
-  throw new LLMError(`Unsupported provider: ${input.provider}`)
+// ── Determine provider from config or fallback ───────────────
+// If no config available (e.g. EF1 before config exists),
+// check which API keys are available and pick accordingly
+
+export function resolveProvider(
+  preferredProvider?: LLMProvider,
+  byokProvider?: LLMProvider
+): LLMProvider {
+  if (byokProvider) return byokProvider
+  if (preferredProvider) return preferredProvider
+
+  // Fallback: use whichever key is configured
+  if (Deno.env.get('OPENAI_API_KEY'))    return 'openai'
+  if (Deno.env.get('ANTHROPIC_API_KEY')) return 'anthropic'
+
+  throw new LLMError('unknown', 'No LLM API key configured (OPENAI_API_KEY or ANTHROPIC_API_KEY)')
 }
