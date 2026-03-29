@@ -7,11 +7,47 @@
 
 import { corsResponse, corsError, CORS_HEADERS } from '../_shared/cors.ts'
 import { callLLMForJSON, resolveProvider } from '../_shared/llm_client.ts'
-import { updateJobStatus } from '../_shared/db_client.ts'
-import { uploadConfig } from '../_shared/storage_client.ts'
 import { validateAgentConfig, parseJSON } from '../_shared/validators.ts'
 import { AuthError, ConfigValidationError } from '../_shared/errors.ts'
 import type { EF2Payload, EF2Response, AgentConfig } from '../_shared/types.ts'
+
+const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')     ?? ''
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+async function updateJobStatus(jobId: string, status: string, extra?: Record<string, unknown>) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/agent_jobs?id=eq.${jobId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey':        SERVICE_ROLE_KEY,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=minimal',
+      },
+      body: JSON.stringify({ status, ...extra }),
+    })
+  } catch {
+    // Non-fatal
+  }
+}
+
+async function uploadConfig(userId: string, agentId: string, version: number, config: AgentConfig): Promise<string> {
+  const path = `agents/${userId}/${agentId}/v${version}/config.json`
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/agents/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Content-Type':  'application/json',
+      'x-upsert':      'true',
+    },
+    body: JSON.stringify(config, null, 2),
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`uploadConfig failed for ${path}: ${text}`)
+  }
+  return path
+}
 
 const CONFIG_SYSTEM_PROMPT = `You are an AI agent config generator. Convert the provided agent spec into a final validated JSON config.
 

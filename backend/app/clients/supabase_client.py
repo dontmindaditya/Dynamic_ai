@@ -1,3 +1,9 @@
+# ============================================================
+# backend/app/clients/supabase_client.py
+# All communication from FastAPI → Supabase
+# Service role key lives here only — never in frontend
+# ============================================================
+
 import os
 import httpx
 from typing import Optional
@@ -31,7 +37,7 @@ async def call_edge_function(
     fn_name: str,
     payload: dict,
     user_id: str,
-    timeout: float = 60.0,
+    timeout: float = 180.0,
 ) -> dict:
     url = f"{FUNCTIONS_URL}/{fn_name}"
     async with httpx.AsyncClient() as client:

@@ -155,9 +155,9 @@ export function resolveProvider(
   if (byokProvider) return byokProvider
   if (preferredProvider) return preferredProvider
 
-  // Fallback: use whichever key is configured
-  if (Deno.env.get('OPENAI_API_KEY'))    return 'openai'
+  // Fallback: prefer Anthropic, then OpenAI
   if (Deno.env.get('ANTHROPIC_API_KEY')) return 'anthropic'
+  if (Deno.env.get('OPENAI_API_KEY'))    return 'openai'
 
   throw new LLMError('unknown', 'No LLM API key configured (OPENAI_API_KEY or ANTHROPIC_API_KEY)')
 }

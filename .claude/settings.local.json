@@ -5,7 +5,10 @@
       "Bash(grep -n \"from.*@supabase\\\\|import.*@supabase\" /d/Dynamic_ai/supabase/functions/_shared/*.ts)",
       "Bash(grep -n \"interface Agent\\\\|type Agent\" /d/Dynamic_ai/frontend/components/agents/*.tsx /d/Dynamic_ai/frontend/lib/*.ts)",
       "Bash(pip install:*)",
-      "Bash(python -c \":*)"
+      "Bash(python -c \":*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(/c/Users/adits/AppData/Local/Programs/Python/Python311/python.exe -m venv venv)",
+      "Bash(source venv/Scripts/activate)"
     ]
   }
 }

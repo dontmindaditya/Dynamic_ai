@@ -1,3 +1,8 @@
+# ============================================================
+# backend/app/services/agent_pipeline.py
+# The core 8-stage build pipeline — runs as a background task
+# ============================================================
+
 import logging
 from uuid import uuid4
 
@@ -42,7 +47,7 @@ async def run_build_pipeline(
             fn_name="prompt-generator",
             payload={"job_id": job_id, "user_id": user_id, "raw_prompt": prompt, "provider": provider},
             user_id=user_id,
-            timeout=60.0,
+            timeout=180.0,
         )
 
         if "error" in ef1:
