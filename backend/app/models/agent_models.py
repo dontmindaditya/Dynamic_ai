@@ -4,8 +4,12 @@ from datetime import datetime
 
 
 class AgentBuildRequest(BaseModel):
-    prompt: str = Field(..., min_length=10, max_length=2000)
-    provider: str = Field(default="openai", pattern="^(openai|anthropic)$")
+    prompt:     str = Field(..., min_length=10, max_length=2000)
+    provider:   str = Field(default="openai", pattern="^(openai|anthropic)$")
+    # Deliverable agent mode — when set, prompt-generator uses the role template
+    owner_role: Optional[str] = Field(default=None, max_length=100)
+    title:      Optional[str] = Field(default=None, max_length=200)
+    deliverable_id: Optional[str] = Field(default=None, max_length=100)
 
 
 class AgentInvokeRequest(BaseModel):

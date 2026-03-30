@@ -160,10 +160,15 @@ export type JobStatus =
 // Request/response shapes for each edge function
 
 export interface EF1Payload {
-  job_id:     string
-  user_id:    string
-  raw_prompt: string
-  provider?:  LLMProvider
+  job_id:            string
+  user_id:           string
+  raw_prompt:        string
+  provider?:         LLMProvider
+  api_key_override?: string
+  // Deliverable agent mode
+  owner_role?:       string
+  title?:            string
+  deliverable_id?:   string
 }
 
 export interface EF1Response {
@@ -171,12 +176,13 @@ export interface EF1Response {
 }
 
 export interface EF2Payload {
-  job_id:       string
-  user_id:      string
-  agent_id:     string
-  spec:         AgentSpec
-  fix_context?: string          // injected on retry with reviewer's suggested_fix
-  provider?:    LLMProvider
+  job_id:            string
+  user_id:           string
+  agent_id:          string
+  spec:              AgentSpec
+  fix_context?:      string          // injected on retry with reviewer's suggested_fix
+  provider?:         LLMProvider
+  api_key_override?: string
 }
 
 export interface EF2Response {
@@ -185,30 +191,33 @@ export interface EF2Response {
 }
 
 export interface EF3Payload {
-  job_id:   string
-  user_id:  string
-  config:   AgentConfig
-  input:    Record<string, unknown>
+  job_id:            string
+  user_id:           string
+  config:            AgentConfig
+  input:             Record<string, unknown>
+  api_key_override?: string
 }
 
 export interface EF3Response extends RunResult {}
 
 export interface EF4Payload {
-  job_id:      string
-  config:      AgentConfig
-  test_case:   TestCase
-  output:      Record<string, unknown>
-  latency_ms:  number
-  errors:      string[]
+  job_id:            string
+  config:            AgentConfig
+  test_case:         TestCase
+  output:            Record<string, unknown>
+  latency_ms:        number
+  errors:            string[]
+  api_key_override?: string
 }
 
 export interface EF4Response extends ReviewResult {}
 
 export interface EF5Payload {
-  agent_id: string
-  user_id:  string
-  input:    Record<string, unknown>
-  source:   'playground' | 'embed' | 'api'
+  agent_id:          string
+  user_id:           string
+  input:             Record<string, unknown>
+  source:            'playground' | 'embed' | 'api'
+  api_key_override?: string
 }
 
 export interface EF5Response extends RunResult {}

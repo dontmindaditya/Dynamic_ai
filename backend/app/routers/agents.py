@@ -14,6 +14,7 @@ from app.clients.supabase_client import (
 )
 from app.middleware.rate_limit import check_build_rate_limit
 from app.middleware.auth import get_current_user
+from app.services.credits_service import get_byok_key
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -36,6 +37,9 @@ async def build_agent(
         user_id=user_id,
         prompt=request.prompt,
         provider=request.provider,
+        owner_role=request.owner_role,
+        title=request.title,
+        deliverable_id=request.deliverable_id,
     )
 
     return AgentBuildResponse(job_id=job_id, status="queued")
@@ -130,14 +134,20 @@ async def playground_invoke(
 
     user_id = current_user["user_id"]
 
+    _, byok_key = await get_byok_key(user_id)
+
+    invoke_payload: dict = {
+        "agent_id": agent_id,
+        "user_id":  user_id,
+        "input":    {"message": request.message},
+        "source":   "playground",
+    }
+    if byok_key:
+        invoke_payload["api_key_override"] = byok_key
+
     result = await call_edge_function(
         fn_name="agent-invoke",
-        payload={
-            "agent_id": agent_id,
-            "user_id":  user_id,
-            "input":    {"message": request.message},
-            "source":   "playground",
-        },
+        payload=invoke_payload,
         user_id=user_id,
         timeout=120.0,
     )

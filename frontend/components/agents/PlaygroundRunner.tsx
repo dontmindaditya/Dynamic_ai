@@ -5,6 +5,32 @@ import { api, type InvokeResponse } from "@/lib/api"
 
 interface Props { agentId: string }
 
+function renderOutput(output: Record<string, unknown>) {
+  const entries = Object.entries(output)
+  if (entries.length === 0) return <span className="text-gray-400">No output</span>
+
+  // Single string value — render as plain prose
+  if (entries.length === 1 && typeof entries[0][1] === "string") {
+    return <p className="whitespace-pre-wrap leading-7">{entries[0][1]}</p>
+  }
+
+  // Multiple fields — render each as a labeled block
+  return (
+    <div className="space-y-4">
+      {entries.map(([key, value]) => (
+        <div key={key}>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+            {key.replace(/_/g, " ")}
+          </p>
+          <p className="whitespace-pre-wrap leading-7">
+            {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function PlaygroundRunner({ agentId }: Props) {
   const [input, setInput] = useState("")
   const [result, setResult] = useState<InvokeResponse | null>(null)
@@ -69,9 +95,9 @@ export function PlaygroundRunner({ agentId }: Props) {
                 <span>{result.tokens_used} tokens</span>
               </div>
             </div>
-            <pre className="overflow-x-auto whitespace-pre-wrap p-4 text-sm text-gray-900 dark:text-gray-100">
-              {JSON.stringify(result.output, null, 2)}
-            </pre>
+            <div className="p-4 text-sm text-gray-900 dark:text-gray-100">
+              {renderOutput(result.output)}
+            </div>
           </div>
 
           {result.errors.length > 0 && (

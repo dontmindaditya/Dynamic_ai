@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import Link from "next/link"
+import { AuthNav } from "@/components/AuthNav"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -44,11 +45,20 @@ export default function RootLayout({
               </Link>
 
               <Link
+                href="/settings"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white"
+              >
+                Settings
+              </Link>
+
+              <Link
                 href="/agents/new"
                 className="rounded-full border border-black bg-black px-4 py-2 text-white shadow-[0_10px_30px_rgba(0,0,0,0.14)] hover:-translate-y-0.5 hover:bg-gray-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-gray-200"
               >
                 Build Agent
               </Link>
+
+              <AuthNav />
             </div>
           </div>
         </nav>

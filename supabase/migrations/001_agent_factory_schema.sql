@@ -1,12 +1,3 @@
--- ============================================================
--- 001_agent_factory_schema.sql
--- Fairquanta AI Agent Factory — core tables
--- user_id is a plain UUID from existing Fairquanta PostgreSQL
--- NO Supabase Auth foreign keys anywhere
--- ============================================================
-
--- ── agent_jobs ───────────────────────────────────────────────
--- Tracks every build pipeline job from queued → live
 CREATE TABLE IF NOT EXISTS agent_jobs (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          UUID        NOT NULL,
@@ -35,7 +26,8 @@ CREATE TABLE IF NOT EXISTS agents (
   name             TEXT        NOT NULL,
   description      TEXT,
   version          INT         NOT NULL DEFAULT 1,
-  config_path      TEXT        NOT NULL,         -- Storage path to current config.json
+  config_path      TEXT,                         -- Storage path to current config.json (legacy)
+  config           JSONB,                        -- inline config object
   status           TEXT        NOT NULL DEFAULT 'draft',
   -- status values: draft | live | paused | archived
   embed_url        TEXT,                         -- https://fairquanta.ai/embed/{id}
@@ -56,7 +48,8 @@ CREATE TABLE IF NOT EXISTS agent_versions (
   agent_id         UUID        NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
   user_id          UUID        NOT NULL,
   version          INT         NOT NULL,
-  config_path      TEXT        NOT NULL,         -- Storage path to this version's config.json
+  config_path      TEXT,                         -- Storage path to this version's config.json (legacy)
+  config           JSONB,                        -- inline config snapshot
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(agent_id, version)
 );
@@ -129,3 +122,13 @@ ALTER TABLE agents          DISABLE ROW LEVEL SECURITY;
 ALTER TABLE agent_versions  DISABLE ROW LEVEL SECURITY;
 ALTER TABLE agent_runs      DISABLE ROW LEVEL SECURITY;
 ALTER TABLE usage_credits   DISABLE ROW LEVEL SECURITY;
+
+-- ═══════════════════════════════════════════════════════════════
+-- MIGRATIONS (for existing deployments)
+-- ═══════════════════════════════════════════════════════════════
+
+-- Migration: Add inline config columns (run this if upgrading existing DB)
+-- ALTER TABLE agents ADD COLUMN IF NOT EXISTS config jsonb;
+-- ALTER TABLE agent_versions ADD COLUMN IF NOT EXISTS config jsonb;
+-- ALTER TABLE agents ALTER COLUMN config_path DROP NOT NULL;
+-- ALTER TABLE agent_versions ALTER COLUMN config_path DROP NOT NULL;

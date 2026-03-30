@@ -104,7 +104,7 @@ ${JSON.stringify(body.spec, null, 2)}`
       userPrompt += `\n\nIMPORTANT — This is a retry. The previous config failed review with this issue:\n${body.fix_context}\n\nFix these specific issues in the new config.`
     }
 
-    const rawJson = await callLLMForJSON(provider, CONFIG_SYSTEM_PROMPT, userPrompt)
+    const rawJson = await callLLMForJSON(provider, CONFIG_SYSTEM_PROMPT, userPrompt, body.api_key_override)
 
     // Parse and validate
     let config: AgentConfig

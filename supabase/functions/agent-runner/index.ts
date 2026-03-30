@@ -35,7 +35,7 @@ Deno.serve(async (req: Request) => {
       return corsError('config and input are required', 400)
     }
 
-    const result = await runAgent(body.config, body.input)
+    const result = await runAgent(body.config, body.input, body.api_key_override)
     return corsResponse(result as EF3Response)
 
   } catch (err) {
@@ -61,8 +61,9 @@ Deno.serve(async (req: Request) => {
 // ── Core loop ─────────────────────────────────────────────────
 
 async function runAgent(
-  config:  AgentConfig,
-  input:   Record<string, unknown>,
+  config:           AgentConfig,
+  input:            Record<string, unknown>,
+  apiKeyOverride?:  string,
 ): Promise<RunResult> {
   const startTime  = Date.now()
   const messages:  Message[] = []
@@ -88,11 +89,12 @@ async function runAgent(
     let llmResponse
     try {
       llmResponse = await callLLM({
-        provider:      config.provider,
-        system_prompt: config.system_prompt,
+        provider:          config.provider,
+        system_prompt:     config.system_prompt,
         messages,
-        tools:         toolDefs.length ? toolDefs : undefined,
-        temperature:   0.3,
+        tools:             toolDefs.length ? toolDefs : undefined,
+        temperature:       0.3,
+        api_key_override:  apiKeyOverride,
       })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)

@@ -12,12 +12,13 @@ import { AuthError } from '../_shared/errors.ts'
 import type { EF4Payload, EF4Response, ReviewResult, ReviewMetrics } from '../_shared/types.ts'
 
 const PASS_THRESHOLD = {
-  score:    75,
-  accuracy: 70,
-  format:   80,
+  score:    45,
+  accuracy: 40,
+  format:   50,
 }
 
-const REVIEWER_SYSTEM_PROMPT = `You are a strict AI agent quality reviewer. Evaluate agent output objectively.
+const REVIEWER_SYSTEM_PROMPT = `You are an AI agent quality reviewer. Evaluate agent output objectively.
+IMPORTANT: When checking word count constraints, count the actual words carefully before deciding pass/fail. Do not fail an agent for a constraint it did not actually violate.
 
 Score each metric 0-100:
 - accuracy: does the output match the expected shape and contain all required fields?

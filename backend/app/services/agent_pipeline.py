@@ -11,6 +11,7 @@ from app.clients.supabase_client import (
     update_job_status,
     create_agent,
 )
+from app.services.credits_service import get_byok_key
 from app.clients.realtime_client import broadcast_job_status
 from app.utils.id_gen import (
     new_uuid,
@@ -25,10 +26,13 @@ MAX_RETRIES = 3
 
 
 async def run_build_pipeline(
-    job_id:   str,
-    user_id:  str,
-    prompt:   str,
-    provider: str = "openai",
+    job_id:         str,
+    user_id:        str,
+    prompt:         str,
+    provider:       str = "openai",
+    owner_role:     str | None = None,
+    title:          str | None = None,
+    deliverable_id: str | None = None,
 ) -> None:
     """
     Full 8-stage agent build pipeline. Called as a FastAPI background task.
@@ -39,13 +43,26 @@ async def run_build_pipeline(
     config    = None
     retry     = 0
 
+    # Fetch BYOK key once — passed to every edge function call
+    _byok_provider, byok_key = await get_byok_key(user_id)
+
     try:
         # Stage 2: Prompt Generator (EF1)
         await _set_status(job_id, user_id, "generating_spec")
 
+        ef1_payload: dict = {"job_id": job_id, "user_id": user_id, "raw_prompt": prompt, "provider": provider}
+        if owner_role:
+            ef1_payload["owner_role"]     = owner_role
+        if title:
+            ef1_payload["title"]          = title
+        if deliverable_id:
+            ef1_payload["deliverable_id"] = deliverable_id
+        if byok_key:
+            ef1_payload["api_key_override"] = byok_key
+
         ef1 = await call_edge_function(
             fn_name="prompt-generator",
-            payload={"job_id": job_id, "user_id": user_id, "raw_prompt": prompt, "provider": provider},
+            payload=ef1_payload,
             user_id=user_id,
             timeout=180.0,
         )
@@ -76,6 +93,8 @@ async def run_build_pipeline(
             }
             if fix_context:
                 ef2_payload["fix_context"] = fix_context
+            if byok_key:
+                ef2_payload["api_key_override"] = byok_key
 
             ef2 = await call_edge_function(
                 fn_name="config-generator",
@@ -101,14 +120,18 @@ async def run_build_pipeline(
             test_case = (config.get("test_cases") or [{}])[0]
             run_input = test_case.get("input", {})
 
+            ef3_payload: dict = {
+                "job_id":  job_id,
+                "user_id": user_id,
+                "config":  config,
+                "input":   run_input,
+            }
+            if byok_key:
+                ef3_payload["api_key_override"] = byok_key
+
             ef3 = await call_edge_function(
                 fn_name="agent-runner",
-                payload={
-                    "job_id":  job_id,
-                    "user_id": user_id,
-                    "config":  config,
-                    "input":   run_input,
-                },
+                payload=ef3_payload,
                 user_id=user_id,
                 timeout=120.0,
             )
@@ -148,6 +171,10 @@ async def run_build_pipeline(
 
             retry += 1
             if retry > MAX_RETRIES:
+                # Soft deploy: if score is at least 35, deploy anyway rather than blocking the user
+                if score >= 35:
+                    logger.warning(f"[pipeline] {job_id} soft-deploying after {MAX_RETRIES} retries (score={score})")
+                    break
                 await _set_status(
                     job_id, user_id, "needs_review",
                     {
@@ -180,6 +207,7 @@ async def run_build_pipeline(
             embed_url=embed_url,
             api_endpoint=api_endpoint,
             api_key_hash=api_key_hash,
+            config=config,
         )
 
         await _set_status(job_id, user_id, "live", {"config_path": config_path, "retry_count": retry})

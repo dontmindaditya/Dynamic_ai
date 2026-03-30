@@ -10,7 +10,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import agents, agent_runs, credits, public_api
+from app.routers import agents, agent_runs, credits, public_api, projects, deliverables, tasks
 
 # ── App init ──────────────────────────────────────────────────
 
@@ -38,6 +38,9 @@ app.include_router(agents.router)
 app.include_router(agent_runs.router)
 app.include_router(credits.router)
 app.include_router(public_api.router)
+app.include_router(projects.router)
+app.include_router(deliverables.router)
+app.include_router(tasks.router)
 
 # ── Health check ──────────────────────────────────────────────
 

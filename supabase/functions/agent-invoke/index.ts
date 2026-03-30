@@ -6,19 +6,77 @@
 // ============================================================
 
 import { corsResponse, corsError, CORS_HEADERS } from '../_shared/cors.ts'
-import { getAgent, insertAgentRun } from '../_shared/db_client.ts'
-import { fetchConfig } from '../_shared/storage_client.ts'
 import { AuthError } from '../_shared/errors.ts'
 import type { EF5Payload, EF5Response } from '../_shared/types.ts'
-
-// Import runAgent logic — we inline the runner here rather than
-// calling EF3, to avoid an extra network hop on every live invocation
 import { callLLM } from '../_shared/llm_client.ts'
 import { getToolDefinitions } from '../_shared/tool_definitions.ts'
 import { executeTools } from '../_shared/tool_executor.ts'
 import { parseJSON } from '../_shared/validators.ts'
 import { MaxStepsError } from '../_shared/errors.ts'
 import type { AgentConfig, Message, RunResult } from '../_shared/types.ts'
+
+const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')              ?? ''
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+const REST_HEADERS = {
+  'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+  'apikey':        SERVICE_ROLE_KEY,
+  'Content-Type':  'application/json',
+  'Prefer':        'return=minimal',
+}
+
+async function getAgent(agentId: string): Promise<Record<string, unknown> | null> {
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/agents?id=eq.${agentId}&limit=1`,
+    { headers: REST_HEADERS }
+  )
+  if (!r.ok) return null
+  const data = await r.json()
+  return data[0] ?? null
+}
+
+async function fetchConfig(configPath: string, agentRecord: Record<string, unknown>): Promise<AgentConfig> {
+  // Prefer config stored directly in the agents table (avoids Storage dependency)
+  if (agentRecord.config && typeof agentRecord.config === 'object') {
+    return agentRecord.config as AgentConfig
+  }
+
+  // Fallback: fetch from Supabase Storage
+  const filePath = configPath.startsWith('agents/') ? configPath.slice('agents/'.length) : configPath
+  const r = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/agents/${filePath}`,
+    { headers: { 'Authorization': `Bearer ${SERVICE_ROLE_KEY}`, 'apikey': SERVICE_ROLE_KEY } }
+  )
+  if (!r.ok) throw new Error(`fetchConfig failed for ${configPath}: ${await r.text()}`)
+  return r.json()
+}
+
+async function insertAgentRun(params: {
+  agentId: string; userId: string; input: Record<string, unknown>
+  output?: Record<string, unknown>; messages?: unknown[]; stepsTaken: number
+  latencyMs: number; tokensUsed: number; error?: string; source: string
+}): Promise<void> {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/agent_runs`, {
+      method:  'POST',
+      headers: REST_HEADERS,
+      body: JSON.stringify({
+        agent_id:    params.agentId,
+        user_id:     params.userId,
+        input:       params.input,
+        output:      params.output      ?? null,
+        messages:    params.messages    ?? null,
+        steps_taken: params.stepsTaken,
+        latency_ms:  params.latencyMs,
+        tokens_used: params.tokensUsed,
+        error:       params.error       ?? null,
+        source:      params.source,
+      }),
+    })
+  } catch {
+    // Non-fatal — run logging should never crash the response
+  }
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -46,15 +104,15 @@ Deno.serve(async (req: Request) => {
       return corsError(`Agent ${body.agent_id} is not live (status: ${agent.status})`, 403)
     }
 
-    // Load config from Storage
-    const config = await fetchConfig(String(agent.config_path))
+    // Load config — prefers agent.config (DB), falls back to Storage
+    const config = await fetchConfig(String(agent.config_path), agent)
 
     // Run the agent
     let result: RunResult
     let runError: string | undefined
 
     try {
-      result = await runAgentForInvoke(config, body.input)
+      result = await runAgentForInvoke(config, body.input, body.api_key_override)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       runError = msg
@@ -99,8 +157,9 @@ Deno.serve(async (req: Request) => {
 // Any changes to the tool-calling loop must be mirrored here
 
 async function runAgentForInvoke(
-  config: AgentConfig,
-  input:  Record<string, unknown>
+  config:          AgentConfig,
+  input:           Record<string, unknown>,
+  apiKeyOverride?: string,
 ): Promise<RunResult> {
   const startTime   = Date.now()
   const messages:   Message[] = []
@@ -112,9 +171,19 @@ async function runAgentForInvoke(
 
   // Build initial user message
   const lines: string[] = []
+  let matchedAny = false
   for (const [key] of Object.entries(config.input_schema)) {
     const value = input[key]
-    if (value !== undefined) lines.push(`${key}: ${String(value)}`)
+    if (value !== undefined) {
+      lines.push(`${key}: ${String(value)}`)
+      matchedAny = true
+    }
+  }
+  // Fallback: playground sends { message: "..." } — map it to the first schema field
+  if (!matchedAny && input.message !== undefined) {
+    const firstKey = Object.keys(config.input_schema)[0]
+    if (firstKey) lines.push(`${firstKey}: ${String(input.message)}`)
+    else lines.push(String(input.message))
   }
   const outputKeys = Object.keys(config.output_schema)
   if (outputKeys.length) {
@@ -130,11 +199,12 @@ async function runAgentForInvoke(
     let llmResponse
     try {
       llmResponse = await callLLM({
-        provider:      config.provider,
-        system_prompt: config.system_prompt,
+        provider:         config.provider,
+        system_prompt:    config.system_prompt,
         messages,
-        tools:         toolDefs.length ? toolDefs : undefined,
-        temperature:   0.3,
+        tools:            toolDefs.length ? toolDefs : undefined,
+        temperature:      0.3,
+        api_key_override: apiKeyOverride,
       })
     } catch (err) {
       errors.push(`LLM error at step ${stepCount}: ${err instanceof Error ? err.message : String(err)}`)

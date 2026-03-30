@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { api, type Agent } from "@/lib/api"
 import { PlaygroundRunner } from "@/components/agents/PlaygroundRunner"
 import { EmbedCodePanel } from "@/components/agents/EmbedCodePanel"
@@ -12,12 +12,27 @@ type Tab = "playground" | "deploy" | "logs"
 
 export default function AgentPage() {
   const params = useParams()
+  const router = useRouter()
   const agentId = params.id as string
 
   const [agent, setAgent] = useState<Agent | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>("playground")
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  async function handleDelete() {
+    setDeleting(true)
+    try {
+      await api.deleteAgent(agentId)
+      router.push("/agents")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete agent")
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
+  }
 
   useEffect(() => {
     api.getAgent(agentId)
@@ -66,9 +81,37 @@ export default function AgentPage() {
             )}
           </div>
 
-          <div className="rounded-2xl border border-black/8 bg-white/70 px-4 py-3 text-right dark:border-white/10 dark:bg-white/5">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-gray-400">Version</p>
-            <span className="mt-1 block text-sm font-medium text-gray-900 dark:text-gray-100">v{agent.version}</span>
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl border border-black/8 bg-white/70 px-4 py-3 text-right dark:border-white/10 dark:bg-white/5">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-gray-400">Version</p>
+              <span className="mt-1 block text-sm font-medium text-gray-900 dark:text-gray-100">v{agent.version}</span>
+            </div>
+
+            {confirmDelete ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">Are you sure?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-full border border-red-600 bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Yes, delete"}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-black/20 dark:border-white/10 dark:text-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="rounded-full border border-black/8 px-3 py-1.5 text-xs font-medium text-red-600 hover:border-red-200 hover:bg-red-50 dark:border-white/10 dark:hover:border-red-900 dark:hover:bg-red-950"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>

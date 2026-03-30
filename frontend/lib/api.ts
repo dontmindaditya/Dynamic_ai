@@ -98,14 +98,53 @@ export interface Credits {
   has_byok:          boolean
 }
 
+export interface Project {
+  id:          string
+  name:        string
+  description: string | null
+  status:      string
+  created_at:  string
+  updated_at:  string
+}
+
+export interface Deliverable {
+  id:          string
+  project_id:  string
+  agent_id:    string | null
+  title:       string
+  description: string | null
+  owner_role:  string | null
+  status:      string
+  created_at:  string
+  updated_at:  string
+}
+
+export interface Task {
+  id:             string
+  deliverable_id: string
+  title:          string
+  description:    string | null
+  status:         "pending" | "processing" | "done" | "blocked"
+  priority:       "low" | "normal" | "high"
+  output:         Record<string, unknown> | null
+  blockers:       string[] | null
+  parent_task_id: string | null
+  created_at:     string
+  updated_at:     string
+}
+
 // ── API calls ─────────────────────────────────────────────────
 
 export const api = {
   // Start a build
-  buildAgent: (prompt: string, provider = "openai") =>
+  buildAgent: (
+    prompt: string,
+    provider = "openai",
+    opts?: { owner_role?: string; title?: string; deliverable_id?: string }
+  ) =>
     apiFetch<BuildResponse>("/agents/build", {
       method: "POST",
-      body:   JSON.stringify({ prompt, provider }),
+      body:   JSON.stringify({ prompt, provider, ...opts }),
     }),
 
   // Poll job status
@@ -146,4 +185,52 @@ export const api = {
       method: "POST",
       body:   JSON.stringify({ provider, api_key }),
     }),
+
+  // ── Projects ──────────────────────────────────────────────
+  createProject: (name: string, description?: string) =>
+    apiFetch<Project>("/projects", { method: "POST", body: JSON.stringify({ name, description }) }),
+
+  listProjects: () =>
+    apiFetch<{ projects: Project[]; total: number }>("/projects"),
+
+  getProject: (id: string) =>
+    apiFetch<Project>(`/projects/${id}`),
+
+  updateProject: (id: string, patch: Partial<Pick<Project, "name" | "description" | "status">>) =>
+    apiFetch<Project>(`/projects/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
+  deleteProject: (id: string) =>
+    apiFetch<{ message: string }>(`/projects/${id}`, { method: "DELETE" }),
+
+  // ── Deliverables ──────────────────────────────────────────
+  createDeliverable: (projectId: string, body: { title: string; description?: string; owner_role?: string; agent_id?: string }) =>
+    apiFetch<Deliverable>(`/projects/${projectId}/deliverables`, { method: "POST", body: JSON.stringify(body) }),
+
+  listDeliverables: (projectId: string) =>
+    apiFetch<{ deliverables: Deliverable[]; total: number }>(`/projects/${projectId}/deliverables`),
+
+  getDeliverable: (projectId: string, deliverableId: string) =>
+    apiFetch<Deliverable>(`/projects/${projectId}/deliverables/${deliverableId}`),
+
+  updateDeliverable: (projectId: string, deliverableId: string, patch: Partial<Pick<Deliverable, "title" | "description" | "owner_role" | "agent_id" | "status">>) =>
+    apiFetch<Deliverable>(`/projects/${projectId}/deliverables/${deliverableId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
+  deleteDeliverable: (projectId: string, deliverableId: string) =>
+    apiFetch<{ message: string }>(`/projects/${projectId}/deliverables/${deliverableId}`, { method: "DELETE" }),
+
+  // ── Tasks ─────────────────────────────────────────────────
+  createTask: (deliverableId: string, body: { title: string; description?: string; priority?: string }) =>
+    apiFetch<Task>(`/deliverables/${deliverableId}/tasks`, { method: "POST", body: JSON.stringify(body) }),
+
+  listTasks: (deliverableId: string) =>
+    apiFetch<{ tasks: Task[]; total: number }>(`/deliverables/${deliverableId}/tasks`),
+
+  getTask: (deliverableId: string, taskId: string) =>
+    apiFetch<Task>(`/deliverables/${deliverableId}/tasks/${taskId}`),
+
+  updateTask: (deliverableId: string, taskId: string, patch: Partial<Pick<Task, "title" | "description" | "priority" | "status">>) =>
+    apiFetch<Task>(`/deliverables/${deliverableId}/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(patch) }),
+
+  deleteTask: (deliverableId: string, taskId: string) =>
+    apiFetch<{ message: string }>(`/deliverables/${deliverableId}/tasks/${taskId}`, { method: "DELETE" }),
 }
