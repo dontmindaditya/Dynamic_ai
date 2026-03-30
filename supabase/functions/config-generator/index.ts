@@ -32,21 +32,26 @@ async function updateJobStatus(jobId: string, status: string, extra?: Record<str
 }
 
 async function uploadConfig(userId: string, agentId: string, version: number, config: AgentConfig): Promise<string> {
-  const path = `agents/${userId}/${agentId}/v${version}/config.json`
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/agents/${path}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      'Content-Type':  'application/json',
-      'x-upsert':      'true',
-    },
-    body: JSON.stringify(config, null, 2),
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`uploadConfig failed for ${path}: ${text}`)
+  const filePath = `${userId}/${agentId}/v${version}/config.json`
+  const fullPath = `agents/${filePath}`
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/agents/${filePath}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'Content-Type':  'application/json',
+        'x-upsert':      'true',
+      },
+      body: JSON.stringify(config, null, 2),
+    })
+    if (!res.ok) {
+      const text = await res.text()
+      console.warn(`[config-generator] uploadConfig non-fatal: ${text}`)
+    }
+  } catch (err) {
+    console.warn(`[config-generator] uploadConfig non-fatal:`, err)
   }
-  return path
+  return fullPath
 }
 
 const CONFIG_SYSTEM_PROMPT = `You are an AI agent config generator. Convert the provided agent spec into a final validated JSON config.

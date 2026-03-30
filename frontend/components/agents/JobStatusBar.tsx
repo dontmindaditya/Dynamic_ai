@@ -16,12 +16,6 @@ const STAGES = [
   { key: "live",              label: "Live"            },
 ]
 
-const STATUS_COLORS: Record<string, string> = {
-  live:         "bg-green-500",
-  needs_review: "bg-yellow-500",
-  failed:       "bg-red-500",
-}
-
 interface Props {
   jobId:     string
   onLive?:   (job: { agent_id: string | null; embed_url: string | null }) => void
@@ -65,9 +59,9 @@ export function JobStatusBar({ jobId, onLive, onFailed }: Props) {
             <div key={stage.key} className="flex items-center gap-1 flex-1">
               <div className={`
                 flex-1 h-1.5 rounded-full transition-all duration-500
-                ${isDone    ? "bg-green-500"  : ""}
-                ${isCurrent ? "bg-blue-500 animate-pulse" : ""}
-                ${isFail    ? "bg-red-500"    : ""}
+                ${isDone    ? "bg-black dark:bg-white"  : ""}
+                ${isCurrent ? "bg-gray-500 dark:bg-gray-400 animate-pulse" : ""}
+                ${isFail    ? "bg-gray-700 dark:bg-gray-300"    : ""}
                 ${!isDone && !isCurrent && !isFail ? "bg-gray-200 dark:bg-gray-700" : ""}
               `} />
             </div>
@@ -77,7 +71,7 @@ export function JobStatusBar({ jobId, onLive, onFailed }: Props) {
 
       {/* Current stage label */}
       <div className="flex items-center justify-between text-sm">
-        <span className={`font-medium ${isFailed ? "text-red-500" : "text-blue-500"}`}>
+        <span className="font-medium text-gray-900 dark:text-gray-100">
           {isFailed
             ? "Build failed"
             : status === "live"
@@ -94,7 +88,7 @@ export function JobStatusBar({ jobId, onLive, onFailed }: Props) {
 
       {/* Failure reason */}
       {isFailed && job?.failure_reason && (
-        <p className="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+        <p className="text-xs text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
           {job.failure_reason}
         </p>
       )}

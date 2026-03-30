@@ -12,7 +12,7 @@ export default function HomePage() {
 
       {/* ── Hero ─────────────────────────────────────────── */}
       <section className="py-20 text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-medium">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-medium">
           NEW — AI Agent Factory
         </div>
 
@@ -28,7 +28,7 @@ export default function HomePage() {
         <div className="flex items-center justify-center gap-4">
           <Link
             href="/agents/new"
-            className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+            className="px-6 py-3 rounded-xl bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black font-medium transition-colors"
           >
             Build your first agent
           </Link>
@@ -69,7 +69,7 @@ export default function HomePage() {
               key={step}
               className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-3"
             >
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-8 h-8 rounded-lg bg-black dark:bg-white flex items-center justify-center text-white dark:text-black text-sm font-bold">
                 {step}
               </div>
               <h3 className="font-medium text-gray-900 dark:text-gray-100">{title}</h3>
@@ -81,16 +81,16 @@ export default function HomePage() {
 
       {/* ── CTA ──────────────────────────────────────────── */}
       <section className="py-16 text-center">
-        <div className="rounded-2xl bg-blue-600 px-8 py-12 space-y-4">
-          <h2 className="text-2xl font-semibold text-white">
+        <div className="rounded-2xl bg-black dark:bg-white px-8 py-12 space-y-4">
+          <h2 className="text-2xl font-semibold text-white dark:text-black">
             Ready to build your first agent?
           </h2>
-          <p className="text-blue-100 text-sm">
+          <p className="text-gray-300 dark:text-gray-700 text-sm">
             Free to start. No credit card required.
           </p>
           <Link
             href="/agents/new"
-            className="inline-flex px-6 py-3 rounded-xl bg-white text-blue-600 font-medium hover:bg-blue-50 transition-colors"
+            className="inline-flex px-6 py-3 rounded-xl bg-white text-black dark:bg-black dark:text-white font-medium hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
           >
             Get started →
           </Link>

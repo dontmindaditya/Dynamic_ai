@@ -20,9 +20,9 @@ export function useJobPolling(jobId: string | null) {
   useEffect(() => {
     if (!jobId) return
 
-    setLoading(true)
-
     const poll = async () => {
+      setLoading(true)
+
       try {
         const data = await api.getJob(jobId)
         setJob(data)

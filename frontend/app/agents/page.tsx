@@ -31,7 +31,7 @@ export default function AgentsPage() {
         </div>
         <Link
           href="/agents/new"
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+          className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black text-sm font-medium transition-colors"
         >
           New Agent
         </Link>
@@ -46,13 +46,13 @@ export default function AgentsPage() {
       )}
 
       {error && (
-        <p className="text-sm text-red-500">{error}</p>
+        <p className="text-sm text-gray-900 dark:text-gray-100">{error}</p>
       )}
 
       {!loading && agents.length === 0 && (
         <div className="text-center py-20 space-y-4">
           <p className="text-gray-400">No agents yet.</p>
-          <Link href="/agents/new" className="text-blue-500 hover:underline text-sm">
+          <Link href="/agents/new" className="text-gray-900 dark:text-gray-100 hover:underline text-sm">
             Build your first agent →
           </Link>
         </div>

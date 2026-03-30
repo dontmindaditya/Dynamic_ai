@@ -35,7 +35,7 @@ export default function RootLayout({
 
           If you don't have a nav yet, use this one:
           ─────────────────────────────────────────────────── */}
-        <nav className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 sticky top-0 z-50">
+        <nav className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black sticky top-0 z-50">
           <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
 
             <Link href="/" className="font-semibold text-gray-900 dark:text-gray-100 text-lg">
@@ -55,7 +55,7 @@ export default function RootLayout({
 
               <Link
                 href="/agents/new"
-                className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black font-medium transition-colors"
               >
                 Build Agent
               </Link>
@@ -64,7 +64,7 @@ export default function RootLayout({
           </div>
         </nav>
 
-        <main className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <main className="min-h-screen bg-gray-50 dark:bg-black">
           {children}
         </main>
 

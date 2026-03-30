@@ -14,7 +14,7 @@ export function RunLogTable({ agentId }: Props) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Run History</h3>
-        <button onClick={refresh} className="text-xs text-blue-500 hover:underline">Refresh</button>
+        <button onClick={refresh} className="text-xs text-gray-900 dark:text-gray-100 hover:underline">Refresh</button>
       </div>
 
       {loading && runs.length === 0 && (
@@ -56,8 +56,8 @@ export function RunLogTable({ agentId }: Props) {
                   <td className="px-4 py-2 text-right text-gray-600 dark:text-gray-400">{run.tokens_used}</td>
                   <td className="px-4 py-2">
                     {run.error
-                      ? <span className="text-red-500">Error</span>
-                      : <span className="text-green-500">OK</span>
+                      ? <span className="text-gray-900 dark:text-gray-100">Error</span>
+                      : <span className="text-gray-900 dark:text-gray-100">OK</span>
                     }
                   </td>
                 </tr>
@@ -68,7 +68,7 @@ export function RunLogTable({ agentId }: Props) {
       )}
 
       {hasMore && (
-        <button onClick={loadMore} className="w-full py-2 text-xs text-blue-500 hover:underline">
+        <button onClick={loadMore} className="w-full py-2 text-xs text-gray-900 dark:text-gray-100 hover:underline">
           {loading ? "Loading..." : "Load more"}
         </button>
       )}

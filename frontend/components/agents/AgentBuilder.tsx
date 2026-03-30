@@ -53,7 +53,7 @@ export function AgentBuilder() {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe your agent in plain English. For example: 'An agent that takes a product URL, researches it, and writes a personalized cold email'"
           rows={5}
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white resize-none"
         />
         <div className="flex justify-between text-xs text-gray-400">
           <span>{prompt.length} characters</span>
@@ -71,7 +71,7 @@ export function AgentBuilder() {
             <button
               key={ex}
               onClick={() => setPrompt(ex)}
-              className="text-left text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-left text-xs text-gray-900 dark:text-gray-100 hover:underline"
             >
               {ex}
             </button>
@@ -91,7 +91,7 @@ export function AgentBuilder() {
               onClick={() => setProvider(p)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium border transition-colors
                 ${provider === p
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-300"
                 }`}
             >
@@ -103,7 +103,7 @@ export function AgentBuilder() {
 
       {/* Error */}
       {error && (
-        <p className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg px-4 py-3">
+        <p className="text-sm text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-3">
           {error}
         </p>
       )}
@@ -112,7 +112,7 @@ export function AgentBuilder() {
       <button
         onClick={handleSubmit}
         disabled={loading || prompt.length < 10}
-        className="w-full py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-sm transition-colors"
+        className="w-full py-3 px-6 rounded-xl bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-white dark:text-black font-medium text-sm transition-colors"
       >
         {loading ? "Starting build..." : "Build Agent"}
       </button>

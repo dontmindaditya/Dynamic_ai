@@ -45,21 +45,21 @@ export function PlaygroundRunner({ agentId }: Props) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your input here..."
           rows={3}
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white resize-none"
         />
       </div>
 
       <button
         onClick={handleRun}
         disabled={loading || !input.trim()}
-        className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium transition-colors"
+        className="w-full py-2.5 px-4 rounded-xl bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 disabled:opacity-50 text-white dark:text-black text-sm font-medium transition-colors"
       >
         {loading ? "Running..." : "Run Agent"}
       </button>
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+        <div className="rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
           {error}
         </div>
       )}
@@ -84,10 +84,10 @@ export function PlaygroundRunner({ agentId }: Props) {
 
           {/* Errors from run */}
           {result.errors.length > 0 && (
-            <div className="rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 px-4 py-3">
-              <p className="text-xs font-medium text-yellow-700 dark:text-yellow-400 mb-1">Warnings</p>
+            <div className="rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3">
+              <p className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-1">Warnings</p>
               {result.errors.map((e, i) => (
-                <p key={i} className="text-xs text-yellow-600 dark:text-yellow-300">{e}</p>
+                <p key={i} className="text-xs text-gray-700 dark:text-gray-300">{e}</p>
               ))}
             </div>
           )}
@@ -95,7 +95,7 @@ export function PlaygroundRunner({ agentId }: Props) {
           {/* Message trace toggle */}
           <button
             onClick={() => setShowTrace((v) => !v)}
-            className="text-xs text-blue-500 hover:text-blue-600 underline"
+            className="text-xs text-gray-900 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 underline"
           >
             {showTrace ? "Hide" : "Show"} full message trace ({result.steps_taken} steps)
           </button>
@@ -107,7 +107,7 @@ export function PlaygroundRunner({ agentId }: Props) {
                   key={i}
                   className={`rounded-lg px-4 py-3 text-xs ${
                     msg.role === "user"
-                      ? "bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800"
+                      ? "bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                       : msg.role === "tool"
                       ? "bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
                       : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
