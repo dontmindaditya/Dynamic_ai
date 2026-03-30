@@ -4,16 +4,16 @@
 // All calls go through FastAPI — never directly to Supabase
 // ============================================================
 
+import { supabase } from "@/lib/supabase"
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
 
 // ── Auth helper ───────────────────────────────────────────────
-// Gets the JWT from wherever your existing auth stores it
-// Adjust this to match your existing auth implementation
-function getAuthHeader(): Record<string, string> {
-  if (typeof window === "undefined") return {}
-  const token = localStorage.getItem("token") ?? sessionStorage.getItem("token")
-  if (!token) return {}
-  return { Authorization: `Bearer ${token}` }
+// Reads the access token from the active Supabase Auth session
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) return {}
+  return { Authorization: `Bearer ${session.access_token}` }
 }
 
 async function apiFetch<T>(
@@ -24,7 +24,7 @@ async function apiFetch<T>(
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...getAuthHeader(),
+      ...(await getAuthHeader()),
       ...(options.headers ?? {}),
     },
   })

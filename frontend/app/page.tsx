@@ -1,102 +1,145 @@
-// ============================================================
-// frontend/app/page.tsx
-// Root home page — add Agent Factory section to existing page
-// If you already have a home page, just add the hero section below
-// ============================================================
-
 import Link from "next/link"
+
+const stats = [
+  { value: "< 90 sec", label: "Prompt to live agent" },
+  { value: "1 script", label: "Embeddable on any site" },
+  { value: "Full logs", label: "Runs, steps, and tokens" },
+]
+
+const features = [
+  {
+    title: "Describe",
+    desc: "Start from plain language. The interface guides the prompt without making you think in config files.",
+  },
+  {
+    title: "Validate",
+    desc: "Each build moves through a visible pipeline so you can see progress, retries, and failures cleanly.",
+  },
+  {
+    title: "Deploy",
+    desc: "Once live, you get a playground, embed code, and request logs in a single workspace.",
+  },
+]
 
 export default function HomePage() {
   return (
-    <div className="max-w-5xl mx-auto px-4">
+    <div className="mx-auto max-w-6xl px-4 pb-24 pt-10 sm:px-6 lg:px-8">
+      <section className="grid gap-8 pb-16 pt-8 lg:grid-cols-[1.25fr_0.9fr] lg:items-end">
+        <div className="space-y-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] text-gray-600 dark:border-white/10 dark:bg-white/5 dark:text-gray-300">
+            <span className="h-2 w-2 rounded-full bg-black dark:bg-white" />
+            AI Agent Factory
+          </div>
 
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <section className="py-20 text-center space-y-6">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black text-white dark:bg-white dark:text-black border border-black dark:border-white text-xs font-medium">
-          NEW — AI Agent Factory
-        </div>
+          <div className="space-y-5">
+            <h1 className="max-w-3xl text-5xl font-medium tracking-[-0.06em] text-gray-950 dark:text-white sm:text-6xl lg:text-7xl">
+              Build and deploy AI agents with a product-grade interface.
+            </h1>
+            <p className="max-w-2xl text-base leading-7 text-gray-500 dark:text-gray-400 sm:text-lg">
+              FairQuanta turns a plain-English request into a tested agent, complete with a hosted endpoint,
+              widget embed, and run history that feels ready for production from day one.
+            </p>
+          </div>
 
-        <h1 className="text-4xl sm:text-5xl font-semibold text-gray-900 dark:text-gray-100 leading-tight">
-          Build AI agents<br />without writing code
-        </h1>
-
-        <p className="text-lg text-gray-500 dark:text-gray-400 max-w-xl mx-auto">
-          Describe what you want your agent to do in plain English.
-          FairQuanta builds, tests, and deploys it in under 90 seconds.
-        </p>
-
-        <div className="flex items-center justify-center gap-4">
-          <Link
-            href="/agents/new"
-            className="px-6 py-3 rounded-xl bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black font-medium transition-colors"
-          >
-            Build your first agent
-          </Link>
-          <Link
-            href="/agents"
-            className="px-6 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 font-medium transition-colors"
-          >
-            View my agents
-          </Link>
-        </div>
-      </section>
-
-      {/* ── How it works ─────────────────────────────────── */}
-      <section className="py-16 space-y-10">
-        <h2 className="text-2xl font-semibold text-center text-gray-900 dark:text-gray-100">
-          How it works
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            {
-              step: "1",
-              title: "Describe",
-              desc: "Type what you want your agent to do in plain English. No prompting skills needed.",
-            },
-            {
-              step: "2",
-              title: "Build",
-              desc: "FairQuanta generates a config, runs it in a sandbox, and reviews the output automatically.",
-            },
-            {
-              step: "3",
-              title: "Deploy",
-              desc: "Get an embed widget and REST API endpoint. Add it to any website with one script tag.",
-            },
-          ].map(({ step, title, desc }) => (
-            <div
-              key={step}
-              className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 space-y-3"
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/agents/new"
+              className="inline-flex items-center justify-center rounded-full border border-black bg-black px-6 py-3 text-sm font-medium text-white shadow-[0_20px_60px_rgba(0,0,0,0.16)] hover:-translate-y-0.5 hover:bg-gray-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-gray-200"
             >
-              <div className="w-8 h-8 rounded-lg bg-black dark:bg-white flex items-center justify-center text-white dark:text-black text-sm font-bold">
-                {step}
+              Start building
+            </Link>
+            <Link
+              href="/agents"
+              className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white/80 px-6 py-3 text-sm font-medium text-gray-700 hover:border-black/20 hover:text-black dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-white/20 dark:hover:text-white"
+            >
+              View dashboard
+            </Link>
+          </div>
+
+          <div className="grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-black/8 bg-white/72 p-4 dark:border-white/10 dark:bg-white/5">
+                <div className="text-xl font-medium tracking-[-0.04em] text-gray-950 dark:text-white">{stat.value}</div>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
               </div>
-              <h3 className="font-medium text-gray-900 dark:text-gray-100">{title}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{desc}</p>
+            ))}
+          </div>
+        </div>
+
+        <div className="panel rounded-[28px] p-4 sm:p-5">
+          <div className="rounded-[24px] border border-black/8 bg-white/92 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.12)] dark:border-white/10 dark:bg-black/80">
+            <div className="flex items-center justify-between border-b border-black/8 pb-4 dark:border-white/10">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-400">Factory Preview</p>
+                <h2 className="mt-2 text-lg font-medium tracking-[-0.03em] text-gray-950 dark:text-white">Agent release pipeline</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-black/80 dark:bg-white/80" />
+                <span className="h-2.5 w-2.5 rounded-full bg-black/30 dark:bg-white/30" />
+                <span className="h-2.5 w-2.5 rounded-full bg-black/15 dark:bg-white/15" />
+              </div>
             </div>
-          ))}
+
+            <div className="space-y-4 py-5">
+              {[
+                ["Prompt", "Research any company URL and write a tailored outbound email."],
+                ["Model", "OpenAI GPT-4o"],
+                ["Result", "Spec generated, sandbox validated, deploy package prepared."],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-black/8 bg-gray-50/90 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400">{label}</p>
+                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-3 border-t border-black/8 pt-4 text-sm dark:border-white/10">
+              {[
+                "Generate config from plain English",
+                "Run sandbox validation before publish",
+                "Ship widget and REST API output",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-black/10 text-xs dark:border-white/10">+</span>
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── CTA ──────────────────────────────────────────── */}
-      <section className="py-16 text-center">
-        <div className="rounded-2xl bg-black dark:bg-white px-8 py-12 space-y-4">
-          <h2 className="text-2xl font-semibold text-white dark:text-black">
-            Ready to build your first agent?
-          </h2>
-          <p className="text-gray-300 dark:text-gray-700 text-sm">
-            Free to start. No credit card required.
-          </p>
+      <section className="grid gap-4 border-t border-black/8 py-16 dark:border-white/10 lg:grid-cols-3">
+        {features.map((item, index) => (
+          <div key={item.title} className="panel rounded-[24px] p-6">
+            <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-full border border-black/10 text-sm font-medium dark:border-white/10">
+              0{index + 1}
+            </div>
+            <h3 className="text-xl font-medium tracking-[-0.03em] text-gray-950 dark:text-white">{item.title}</h3>
+            <p className="mt-3 text-sm leading-7 text-gray-500 dark:text-gray-400">{item.desc}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="panel rounded-[32px] px-6 py-8 sm:px-10 sm:py-10">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-xs uppercase tracking-[0.24em] text-gray-400">Launch Faster</p>
+            <h2 className="mt-3 text-3xl font-medium tracking-[-0.05em] text-gray-950 dark:text-white sm:text-4xl">
+              A dashboard that feels closer to shipping infrastructure than a toy demo.
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-gray-500 dark:text-gray-400">
+              Clean surfaces, sharp contrast, and a focused workspace inspired by modern developer tools.
+            </p>
+          </div>
           <Link
             href="/agents/new"
-            className="inline-flex px-6 py-3 rounded-xl bg-white text-black dark:bg-black dark:text-white font-medium hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+            className="inline-flex w-full items-center justify-center rounded-full border border-black bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-gray-200 lg:w-auto"
           >
-            Get started →
+            Create your first agent
           </Link>
         </div>
       </section>
-
     </div>
   )
 }
