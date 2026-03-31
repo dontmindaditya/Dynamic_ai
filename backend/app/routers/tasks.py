@@ -72,7 +72,10 @@ async def _invoke_agent_for_task(
 
     except Exception as exc:
         logger.error(f"[tasks] {task_id} agent invocation failed: {exc}")
-        await update_task(task_id, {"status": "pending"})
+        await update_task(task_id, {
+            "status": "blocked",
+            "blockers": [str(exc)],
+        })
 
 
 @router.post("", response_model=TaskResponse, status_code=201)
@@ -181,6 +184,39 @@ async def update(
             _invoke_agent_for_task,
             task_id, agent_id, user_id, deliverable, project,
         )
+
+    updated = await get_task(task_id)
+    return _fmt(updated)
+
+
+@router.post("/{task_id}/retry", response_model=TaskResponse)
+async def retry_task(
+    deliverable_id:   str,
+    task_id:          str,
+    background_tasks: BackgroundTasks,
+    current_user:     dict = Depends(get_current_user),
+):
+    """Manually trigger agent invocation on a pending/blocked task."""
+    user_id     = current_user["user_id"]
+    deliverable = await get_deliverable(deliverable_id)
+    if not deliverable or deliverable["user_id"] != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    task = await get_task(task_id)
+    if not task or task["deliverable_id"] != deliverable_id:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    agent_id = deliverable.get("agent_id")
+    agent    = await get_agent(agent_id) if agent_id else None
+    if not agent or agent.get("status") != "live":
+        raise HTTPException(status_code=400, detail="No live agent assigned to this deliverable")
+
+    await update_task(task_id, {"status": "processing", "blockers": None, "output": None})
+    project = await get_project(deliverable["project_id"]) or {"id": "", "name": ""}
+    background_tasks.add_task(
+        _invoke_agent_for_task,
+        task_id, agent_id, user_id, deliverable, project,
+    )
 
     updated = await get_task(task_id)
     return _fmt(updated)

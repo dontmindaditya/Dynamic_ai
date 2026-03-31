@@ -38,6 +38,13 @@ export default function RootLayout({
 
             <div className="flex items-center gap-3 sm:gap-6 text-sm">
               <Link
+                href="/projects"
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white"
+              >
+                Projects
+              </Link>
+
+              <Link
                 href="/agents"
                 className="text-gray-600 dark:text-gray-400 hover:text-gray-950 dark:hover:text-white"
               >

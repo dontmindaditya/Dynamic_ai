@@ -150,10 +150,15 @@ async function runAgent(
       // Parse the final answer — LLM should return JSON matching output_schema
       let output: Record<string, unknown> = {}
       try {
-        output = parseJSON<Record<string, unknown>>(llmResponse.content)
+        const parsed = parseJSON<Record<string, unknown>>(llmResponse.content)
+        // Strip any keys not in output_schema to keep output predictable
+        const schemaKeys = Object.keys(config.output_schema)
+        output = schemaKeys.length
+          ? Object.fromEntries(schemaKeys.filter((k) => k in parsed).map((k) => [k, parsed[k]]))
+          : parsed
+        // If nothing matched, fall back to full parsed output
+        if (Object.keys(output).length === 0) output = parsed
       } catch {
-        // If not JSON, wrap the text response
-        // This handles cases where the agent returns plain text
         const firstOutputKey = Object.keys(config.output_schema)[0] ?? 'result'
         output = { [firstOutputKey]: llmResponse.content }
       }
@@ -210,7 +215,7 @@ function buildUserMessage(
   const outputKeys = Object.keys(config.output_schema)
   if (outputKeys.length) {
     lines.push(
-      `\nReturn your response as a JSON object with these fields: ${outputKeys.join(', ')}`
+      `\nReturn ONLY a JSON object with exactly these fields: ${outputKeys.join(', ')}. No extra fields, no explanation, no markdown.`
     )
   }
 

@@ -10,7 +10,7 @@ from app.models.agent_models import (
 from app.services.agent_pipeline import run_build_pipeline
 from app.clients.supabase_client import (
     call_edge_function, create_job, get_job, get_agent,
-    get_agents_for_user, delete_agent,
+    get_agents_for_user, delete_agent, update_agent_config,
 )
 from app.middleware.rate_limit import check_build_rate_limit
 from app.middleware.auth import get_current_user
@@ -117,6 +117,50 @@ async def remove_agent(
         raise HTTPException(status_code=403, detail="Access denied")
     await delete_agent(agent_id)
     return {"message": "Agent deleted"}
+
+
+@router.post("/{agent_id}/repair-config")
+async def repair_config(
+    agent_id:     str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Re-generate and save config for agents missing their config column (built before the fix)."""
+    agent = await get_agent(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if agent["user_id"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if agent.get("config"):
+        return {"message": "Config already present — no repair needed"}
+
+    job = await get_job(agent.get("job_id", ""))
+    if not job or not job.get("spec"):
+        raise HTTPException(status_code=400, detail="No spec found in job — please rebuild the agent manually")
+
+    user_id = current_user["user_id"]
+    _, byok_key = await get_byok_key(user_id)
+
+    ef2_payload: dict = {
+        "job_id":   job["id"],
+        "user_id":  user_id,
+        "agent_id": agent_id,
+        "spec":     job["spec"],
+        "provider": agent.get("config", {}).get("provider", "anthropic") if agent.get("config") else "anthropic",
+    }
+    if byok_key:
+        ef2_payload["api_key_override"] = byok_key
+
+    ef2 = await call_edge_function("config-generator", ef2_payload, user_id, timeout=60.0)
+    if "error" in ef2:
+        raise HTTPException(status_code=500, detail=f"config-generator failed: {ef2['error']}")
+
+    config = ef2.get("config")
+    if not config:
+        raise HTTPException(status_code=500, detail="config-generator returned no config")
+
+    await update_agent_config(agent_id, config)
+    return {"message": "Config repaired successfully", "agent_id": agent_id}
 
 
 @router.post("/{agent_id}/run", response_model=AgentInvokeResponse)

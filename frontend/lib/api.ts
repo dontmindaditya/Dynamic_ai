@@ -233,4 +233,7 @@ export const api = {
 
   deleteTask: (deliverableId: string, taskId: string) =>
     apiFetch<{ message: string }>(`/deliverables/${deliverableId}/tasks/${taskId}`, { method: "DELETE" }),
+
+  retryTask: (deliverableId: string, taskId: string) =>
+    apiFetch<Task>(`/deliverables/${deliverableId}/tasks/${taskId}/retry`, { method: "POST" }),
 }

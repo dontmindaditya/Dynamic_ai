@@ -39,6 +39,7 @@ async function uploadConfig(userId: string, agentId: string, version: number, co
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey':        SERVICE_ROLE_KEY,
         'Content-Type':  'application/json',
         'x-upsert':      'true',
       },

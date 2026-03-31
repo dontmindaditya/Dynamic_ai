@@ -187,7 +187,7 @@ async function runAgentForInvoke(
   }
   const outputKeys = Object.keys(config.output_schema)
   if (outputKeys.length) {
-    lines.push(`\nReturn your response as JSON with fields: ${outputKeys.join(', ')}`)
+    lines.push(`\nReturn ONLY a JSON object with exactly these fields: ${outputKeys.join(', ')}. No extra fields, no explanation, no markdown.`)
   }
   if (config.constraints.length) {
     lines.push(`\nConstraints:\n${config.constraints.map((c) => `- ${c}`).join('\n')}`)
@@ -230,7 +230,13 @@ async function runAgentForInvoke(
 
       let output: Record<string, unknown> = {}
       try {
-        output = parseJSON<Record<string, unknown>>(llmResponse.content)
+        const parsed = parseJSON<Record<string, unknown>>(llmResponse.content)
+        // Strip keys not in output_schema — keeps output predictable for validators and UI
+        const schemaKeys = Object.keys(config.output_schema)
+        output = schemaKeys.length
+          ? Object.fromEntries(schemaKeys.filter((k) => k in parsed).map((k) => [k, parsed[k]]))
+          : parsed
+        if (Object.keys(output).length === 0) output = parsed
       } catch {
         const firstKey = Object.keys(config.output_schema)[0] ?? 'result'
         output = { [firstKey]: llmResponse.content }

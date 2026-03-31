@@ -10,6 +10,7 @@ from app.clients.supabase_client import (
     call_edge_function,
     update_job_status,
     create_agent,
+    update_deliverable,
 )
 from app.services.credits_service import get_byok_key
 from app.clients.realtime_client import broadcast_job_status
@@ -209,6 +210,9 @@ async def run_build_pipeline(
             api_key_hash=api_key_hash,
             config=config,
         )
+
+        if deliverable_id:
+            await update_deliverable(deliverable_id, {"agent_id": agent_id})
 
         await _set_status(job_id, user_id, "live", {"config_path": config_path, "retry_count": retry})
 

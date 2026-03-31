@@ -129,7 +129,7 @@ export function AgentBuilder() {
       {mode === "deliverable" && (
         <div className="space-y-5">
           <div className="rounded-[20px] border border-black/8 bg-gray-50/80 px-4 py-3 text-xs leading-6 text-gray-500 dark:border-white/10 dark:bg-white/[0.03] dark:text-gray-400">
-            The agent's system prompt will be built from your role and deliverable.
+            The agent&apos;s system prompt will be built from your role and deliverable.
             It will stay in character as the <span className="font-medium text-gray-900 dark:text-gray-100">owner_role</span> across all tasks.
           </div>
 

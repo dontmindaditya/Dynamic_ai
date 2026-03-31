@@ -154,6 +154,19 @@ async def get_agent(agent_id: str) -> Optional[dict]:
     return data[0] if data else None
 
 
+async def update_agent_config(agent_id: str, config: dict) -> None:
+    async with httpx.AsyncClient() as client:
+        r = await client.patch(
+            f"{REST_URL}/agents",
+            headers=_rest_headers(),
+            params={"id": f"eq.{agent_id}"},
+            json={"config": config},
+            timeout=10.0,
+        )
+    if r.status_code >= 400:
+        raise Exception(f"update_agent_config failed: {r.text}")
+
+
 async def get_agents_for_user(user_id: str) -> list[dict]:
     async with httpx.AsyncClient() as client:
         r = await client.get(
